@@ -1,0 +1,29 @@
+{
+  "name": "signbridge-ai",
+  "version": "1.0.0",
+  "description": "SignBridge AI: Connecting People Beyond Language - Assistive Two-Way Communication Platform",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "build:client": "npm run build --prefix client",
+    "start": "npm start --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "sign-language",
+    "accessibility",
+    "gemini-ai",
+    "speech-to-text",
+    "text-to-speech",
+    "react",
+    "express",
+    "mysql"
+  ],
+  "author": "SignBridge Team",
+  "license": "MIT"
+}
+
