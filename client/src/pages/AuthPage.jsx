@@ -389,7 +389,7 @@ export const AuthPage = ({ initialMode = 'login' }) => {
                   theme="outline"
                   size="large"
                   shape="rectangular"
-                  width="100%"
+                  width="380"
                   text={mode === 'login' ? 'signin_with' : 'signup_with'}
                 />
               </div>
