@@ -37,10 +37,31 @@ export const AuthPage = ({ initialMode = 'login' }) => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const redirectPath = location.state?.from?.pathname || '/communicate';
 
+  // Validation helpers
+  const isGmailValid = (val) => /^[^\s@]+@gmail\.com$/i.test(val);
+  const hasMinLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const isPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasNumber;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
+
+    // Client-side validation for register mode
+    if (mode === 'register') {
+      if (!isGmailValid(email)) {
+        setError('Only @gmail.com email addresses are allowed.');
+        return;
+      }
+      if (!isPasswordValid) {
+        setError('Password must be at least 8 characters with uppercase, lowercase, and a number.');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -232,11 +253,21 @@ export const AuthPage = ({ initialMode = 'login' }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="sady@example.com"
+                  placeholder="yourname@gmail.com"
                   autoComplete="email"
                   className="w-full pl-11 pr-4 py-3 sm:py-3.5 text-sm rounded-2xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 bg-white placeholder:text-slate-400 transition-all outline-none"
                 />
               </div>
+              {mode === 'register' && email && !isGmailValid(email) && (
+                <p className="text-[11px] text-rose-500 mt-1.5 ml-1 font-semibold">
+                  ✕ Only @gmail.com emails are accepted
+                </p>
+              )}
+              {mode === 'register' && email && isGmailValid(email) && (
+                <p className="text-[11px] text-emerald-600 mt-1.5 ml-1 font-semibold">
+                  ✓ Valid Gmail address
+                </p>
+              )}
             </div>
 
             {/* 2. PASSWORD INPUT */}
@@ -259,7 +290,7 @@ export const AuthPage = ({ initialMode = 'login' }) => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -275,6 +306,22 @@ export const AuthPage = ({ initialMode = 'login' }) => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {mode === 'register' && password && (
+                <div className="mt-2 space-y-1 ml-1">
+                  <p className={`text-[11px] font-semibold ${hasMinLength ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {hasMinLength ? '✓' : '✕'} Minimum 8 characters
+                  </p>
+                  <p className={`text-[11px] font-semibold ${hasUppercase ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {hasUppercase ? '✓' : '✕'} At least one uppercase letter (A-Z)
+                  </p>
+                  <p className={`text-[11px] font-semibold ${hasLowercase ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {hasLowercase ? '✓' : '✕'} At least one lowercase letter (a-z)
+                  </p>
+                  <p className={`text-[11px] font-semibold ${hasNumber ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {hasNumber ? '✓' : '✕'} At least one number (0-9)
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 3. SIGN IN / LOGIN BUTTON */}
