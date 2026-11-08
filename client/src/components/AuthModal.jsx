@@ -377,7 +377,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', onSuccess })
                   theme="outline"
                   size="large"
                   shape="rectangular"
-                  width="100%"
+                  width="380"
                 />
               </div>
             ) : (
