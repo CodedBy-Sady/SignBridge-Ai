@@ -21,52 +21,46 @@ export function App() {
     setAuthModalOpen(true);
   };
 
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const googleClientId =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    '447545821120-mtoo2hk28ftj4ggmrnouqdgcgfdmtnjj.apps.googleusercontent.com';
 
-  const AppContent = (
-    <AuthProvider>
-      <AccessibilityProvider>
-        <Router>
-          <div className="flex flex-col min-h-screen">
-            {/* Global Accessible Navigation */}
-            <Navbar onOpenAuth={handleOpenAuth} />
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <AccessibilityProvider>
+          <Router>
+            <div className="flex flex-col min-h-screen">
+              {/* Global Accessible Navigation */}
+              <Navbar onOpenAuth={handleOpenAuth} />
 
-            {/* Application Main Content Routes */}
-            <div className="flex-1">
-              <Routes>
-                <Route path="/" element={<LandingPage onOpenAuth={handleOpenAuth} />} />
-                <Route path="/login" element={<AuthPage initialMode="login" />} />
-                <Route path="/register" element={<AuthPage initialMode="register" />} />
-                <Route path="/communicate" element={<CommunicatePage onOpenAuth={handleOpenAuth} />} />
-                <Route path="/history" element={<SessionHistoryPage onOpenAuth={handleOpenAuth} />} />
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
+              {/* Application Main Content Routes */}
+              <div className="flex-1">
+                <Routes>
+                  <Route path="/" element={<LandingPage onOpenAuth={handleOpenAuth} />} />
+                  <Route path="/login" element={<AuthPage initialMode="login" />} />
+                  <Route path="/register" element={<AuthPage initialMode="register" />} />
+                  <Route path="/communicate" element={<CommunicatePage onOpenAuth={handleOpenAuth} />} />
+                  <Route path="/history" element={<SessionHistoryPage onOpenAuth={handleOpenAuth} />} />
+                  <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+              </div>
+
+              {/* Unified Accessible Footer */}
+              <Footer />
+
+              {/* Authentication Modal */}
+              <AuthModal
+                isOpen={authModalOpen}
+                onClose={() => setAuthModalOpen(false)}
+                initialMode={authMode}
+              />
             </div>
-
-            {/* Unified Accessible Footer */}
-            <Footer />
-
-            {/* Authentication Modal */}
-            <AuthModal
-              isOpen={authModalOpen}
-              onClose={() => setAuthModalOpen(false)}
-              initialMode={authMode}
-            />
-          </div>
-        </Router>
-      </AccessibilityProvider>
-    </AuthProvider>
+          </Router>
+        </AccessibilityProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
-
-  if (googleClientId && googleClientId.trim() !== '') {
-    return (
-      <GoogleOAuthProvider clientId={googleClientId}>
-        {AppContent}
-      </GoogleOAuthProvider>
-    );
-  }
-
-  return AppContent;
 }
 
 export default App;
