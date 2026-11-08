@@ -46,12 +46,24 @@ export const AuthProvider = ({ children }) => {
     return receivedUser;
   };
 
-  const googleLogin = async (idToken, role = 'deaf_user', demoUser = null) => {
-    const res = await authAPI.googleAuth({
-      id_token: idToken,
-      role,
-      demo_user: demoUser
-    });
+  const googleLogin = async (tokenOrOptions, role = 'deaf_user', demoUser = null) => {
+    let payload = {};
+    if (tokenOrOptions && typeof tokenOrOptions === 'object') {
+      payload = {
+        id_token: tokenOrOptions.idToken || tokenOrOptions.id_token,
+        access_token: tokenOrOptions.accessToken || tokenOrOptions.access_token,
+        role: tokenOrOptions.role || role,
+        demo_user: tokenOrOptions.demoUser || tokenOrOptions.demo_user || demoUser
+      };
+    } else {
+      payload = {
+        id_token: tokenOrOptions,
+        role,
+        demo_user: demoUser
+      };
+    }
+
+    const res = await authAPI.googleAuth(payload);
     const { token: receivedToken, user: receivedUser } = res.data;
     setToken(receivedToken);
     setUser(receivedUser);

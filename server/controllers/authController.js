@@ -159,16 +159,38 @@ export const login = async (req, res, next) => {
 
 export const googleAuth = async (req, res, next) => {
   try {
-    const { id_token, role = 'deaf_user', demo_user } = req.body;
+    const { id_token, access_token, role = 'deaf_user', demo_user } = req.body;
 
     let email, full_name, google_id, avatar_url;
 
     // Support instant demo Google Sign-in if simulated or client ID is testing
     if (demo_user) {
       email = demo_user.email;
-      full_name = demo_user.name || 'Google User';
+      full_name = demo_user.name || 'Soliman Hossen Sady';
       google_id = demo_user.sub || `google-demo-${Date.now()}`;
       avatar_url = demo_user.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100';
+    } else if (access_token) {
+      try {
+        const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${access_token}` }
+        });
+        if (!profileRes.ok) {
+          return res.status(401).json({
+            success: false,
+            message: 'Failed to verify Google access token.'
+          });
+        }
+        const profile = await profileRes.json();
+        email = profile.email;
+        full_name = profile.name || profile.email?.split('@')[0] || 'Google User';
+        google_id = profile.sub;
+        avatar_url = profile.picture;
+      } catch (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error communicating with Google OAuth service.'
+        });
+      }
     } else if (id_token) {
       const clientId = getGoogleClientId();
       if (clientId) {
