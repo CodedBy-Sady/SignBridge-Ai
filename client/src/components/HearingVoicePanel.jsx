@@ -7,7 +7,6 @@ import {
   Keyboard,
   Radio,
   Square,
-  Globe,
   Sparkles,
 } from 'lucide-react';
 import { useSpeechToText } from '../hooks/useSpeechToText';
@@ -23,17 +22,13 @@ export const HearingVoicePanel = ({ onSendMessage }) => {
     isSupported,
     interimText,
     finalText,
-    language,
-    setLanguage,
     error,
     toggleListening,
     stopListening,
     resetTranscript,
-  } = useSpeechToText({ defaultLanguage: 'en-US' });
+  } = useSpeechToText();
 
-  // Handle clicking the Mic button:
-  // When active → stops mic and captures the spoken text into the completed list
-  // When inactive → starts listening
+  // Handle clicking the Mic button
   const handleMicToggle = () => {
     if (isListening) {
       const liveText = (finalText + (interimText ? ' ' + interimText : '')).trim();
@@ -53,7 +48,7 @@ export const HearingVoicePanel = ({ onSendMessage }) => {
     }
   };
 
-  // Transmit all spoken words to the dialogue stream
+  // Transmit spoken words to the dialogue stream
   const handleSendVoiceMessage = () => {
     const liveText = (finalText + (interimText ? ' ' + interimText : '')).trim();
     const allTextList = completedLines.map((l) => l.text);
@@ -138,49 +133,19 @@ export const HearingVoicePanel = ({ onSendMessage }) => {
               Channel 2: Hearing User (Voice-to-Text)
             </h2>
             <p className="text-[11px] text-slate-400">
-              Continuous Speech Recognition • Instant Captions
+              Speech Recognition • Instant Captions
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* Language Selector Pill */}
-          <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
-            <button
-              type="button"
-              onClick={() => setLanguage('en-US')}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
-                language === 'en-US'
-                  ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="English (US)"
-            >
-              🇺🇸 EN
-            </button>
-            <button
-              type="button"
-              onClick={() => setLanguage('bn-BD')}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
-                language === 'bn-BD'
-                  ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="বাংলা (বাংলাদেশ)"
-            >
-              🇧🇩 বাংলা
-            </button>
-          </div>
-
-          {/* Live Mic Status Indicator */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 text-[11px] font-semibold text-slate-300">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isListening ? 'bg-red-500 animate-ping' : 'bg-slate-500'
-              }`}
-            />
-            <span>{isListening ? 'Listening Live' : 'Mic Off'}</span>
-          </div>
+        {/* Live Mic Status Indicator */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 text-[11px] font-semibold text-slate-300">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isListening ? 'bg-red-500 animate-ping' : 'bg-slate-500'
+            }`}
+          />
+          <span>{isListening ? 'Listening Live' : 'Mic Off'}</span>
         </div>
       </div>
 
@@ -221,7 +186,7 @@ export const HearingVoicePanel = ({ onSendMessage }) => {
             {isListening
               ? '🔴 Recording active! Speak as long as you want. When done, click the button to stop and finish your line.'
               : isSupported
-              ? `Click the mic to speak in ${language === 'bn-BD' ? 'Bangla' : 'English'}. Speech converts to text continuously in real time.`
+              ? 'Click the mic to speak. Speech converts to text continuously in real time.'
               : 'Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.'}
           </p>
 
