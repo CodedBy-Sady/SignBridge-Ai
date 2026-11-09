@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * useSpeechToText — Speech recognition hook
- * NOTE: Currently contains an intentional activation bug for step 1 demonstration.
+ * useSpeechToText — Reliable, continuous real-time speech recognition hook.
+ * Configured strictly for English ('en-US').
  */
 export const useSpeechToText = () => {
   const [isListening, setIsListening] = useState(false);
@@ -12,6 +12,8 @@ export const useSpeechToText = () => {
   const [error, setError] = useState(null);
 
   const recognitionRef = useRef(null);
+  const isManuallyStoppedRef = useRef(true);
+  const restartTimerRef = useRef(null);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -19,7 +21,9 @@ export const useSpeechToText = () => {
 
     if (!SpeechRecognition) {
       setIsSupported(false);
-      setError('Web Speech API is not supported in this browser.');
+      setError(
+        'Web Speech API is not supported in this browser. Please use Google Chrome or Microsoft Edge.'
+      );
       return;
     }
 
@@ -27,19 +31,132 @@ export const useSpeechToText = () => {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setError(null);
+    };
+
+    recognition.onresult = (event) => {
+      let currentInterim = '';
+      let newFinalChunk = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          newFinalChunk += transcript;
+        } else {
+          currentInterim += transcript;
+        }
+      }
+
+      setInterimText(currentInterim);
+
+      if (newFinalChunk) {
+        const trimmed = newFinalChunk.trim();
+        if (trimmed) {
+          setFinalText((prev) => (prev ? `${prev} ${trimmed}` : trimmed));
+          setInterimText('');
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.warn('[SpeechToText] Error:', event.error);
+
+      if (event.error === 'not-allowed') {
+        setError(
+          'Microphone permission denied. Please allow microphone access in your browser settings and try again.'
+        );
+        setIsListening(false);
+        isManuallyStoppedRef.current = true;
+      } else if (event.error === 'no-speech') {
+        // Handled cleanly by auto-recovery restart in onend
+      } else if (event.error === 'network') {
+        setError('Network error: Voice recognition requires an active internet connection.');
+        setIsListening(false);
+        isManuallyStoppedRef.current = true;
+      } else if (event.error !== 'aborted') {
+        setError(`Speech recognition error: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if user did NOT explicitly click stop
+      if (!isManuallyStoppedRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = setTimeout(() => {
+          if (!isManuallyStoppedRef.current && recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch (err) {
+              if (!err.message?.includes('already started')) {
+                console.warn('[SpeechToText] Auto-restart warning:', err.message);
+              }
+            }
+          }
+        }, 150);
+        return;
+      }
+      setIsListening(false);
+    };
 
     recognitionRef.current = recognition;
+
+    return () => {
+      isManuallyStoppedRef.current = true;
+      clearTimeout(restartTimerRef.current);
+      try {
+        recognition.abort();
+      } catch {
+        // Ignore cleanup errors
+      }
+    };
   }, []);
 
-  // BUG: startListening fails to start speech recognition
   const startListening = useCallback(async () => {
-    console.error('[SpeechToText] Failed to initialize microphone input stream.');
-    setError('Microphone input error: Unable to start voice capture.');
-    setIsListening(false);
-    // Intentionally blocked — mic does not activate
-  }, []);
+    if (!recognitionRef.current || !isSupported) return;
+
+    setError(null);
+    setInterimText('');
+    setFinalText('');
+    isManuallyStoppedRef.current = false;
+
+    // Mic pre-check
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        console.warn('[SpeechToText] getUserMedia pre-check:', err);
+      }
+    }
+
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (err) {
+      if (err.message && err.message.includes('already started')) {
+        setIsListening(true);
+      } else {
+        console.warn('[SpeechToText] Start error:', err.message);
+      }
+    }
+  }, [isSupported]);
 
   const stopListening = useCallback(() => {
+    isManuallyStoppedRef.current = true;
+    clearTimeout(restartTimerRef.current);
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.warn('[SpeechToText] Stop error:', err.message);
+      }
+    }
+
     setIsListening(false);
     setInterimText('');
   }, []);
