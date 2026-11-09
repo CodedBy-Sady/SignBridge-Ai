@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * useSpeechToText — Reliable, continuous real-time speech recognition hook.
- * Configured strictly for English ('en-US').
+ * useSpeechToText — Resilient, continuous real-time speech recognition hook.
+ * Supports multi-language speech recognition (e.g., English 'en-US' and Bangla 'bn-BD').
  */
-export const useSpeechToText = () => {
+export const useSpeechToText = ({ defaultLanguage = 'en-US' } = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
   const [finalText, setFinalText] = useState('');
+  const [language, setLanguage] = useState(defaultLanguage);
   const [isSupported, setIsSupported] = useState(true);
   const [error, setError] = useState(null);
 
@@ -30,7 +31,7 @@ export const useSpeechToText = () => {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    recognition.lang = language;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
@@ -72,7 +73,7 @@ export const useSpeechToText = () => {
         setIsListening(false);
         isManuallyStoppedRef.current = true;
       } else if (event.error === 'no-speech') {
-        // Handled cleanly by auto-recovery restart in onend
+        // Auto-recovery restart handles normal silence timeouts
       } else if (event.error === 'network') {
         setError('Network error: Voice recognition requires an active internet connection.');
         setIsListening(false);
@@ -83,7 +84,7 @@ export const useSpeechToText = () => {
     };
 
     recognition.onend = () => {
-      // Auto-restart if user did NOT explicitly click stop
+      // Auto-restart if user did not manually click stop
       if (!isManuallyStoppedRef.current) {
         clearTimeout(restartTimerRef.current);
         restartTimerRef.current = setTimeout(() => {
@@ -115,6 +116,13 @@ export const useSpeechToText = () => {
     };
   }, []);
 
+  // Dynamically update recognition language
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = language;
+    }
+  }, [language]);
+
   const startListening = useCallback(async () => {
     if (!recognitionRef.current || !isSupported) return;
 
@@ -134,6 +142,7 @@ export const useSpeechToText = () => {
     }
 
     try {
+      recognitionRef.current.lang = language;
       recognitionRef.current.start();
       setIsListening(true);
     } catch (err) {
@@ -143,7 +152,7 @@ export const useSpeechToText = () => {
         console.warn('[SpeechToText] Start error:', err.message);
       }
     }
-  }, [isSupported]);
+  }, [isSupported, language]);
 
   const stopListening = useCallback(() => {
     isManuallyStoppedRef.current = true;
@@ -179,6 +188,8 @@ export const useSpeechToText = () => {
     isSupported,
     interimText,
     finalText,
+    language,
+    setLanguage,
     error,
     startListening,
     stopListening,
