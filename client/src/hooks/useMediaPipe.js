@@ -20,6 +20,7 @@ export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled =
   const stabilizerRef = useRef(new GestureStabilizer(5, 1400));
   const isSendingFrameRef = useRef(false);
   const lastAiCheckRef = useRef(0);
+  const isAiInFlightRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -105,22 +106,29 @@ export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled =
               }
             }
 
-            // 1. Throttled Backend ML Classification (Google GISLR 250-Word Model)
+            // 1. Zero-Jank Throttled Backend AI Inference
             const now = performance.now();
-            if (now - lastAiCheckRef.current > 300) {
+            if (!isAiInFlightRef.current && now - lastAiCheckRef.current > 350) {
               lastAiCheckRef.current = now;
-              aiService.classifyCurrentGesture(results.multiHandLandmarks[0]).then((mlResult) => {
-                if (!isMounted) return;
-                if (mlResult && mlResult.gloss) {
-                  setActiveGesture(mlResult.gloss);
-                  setConfidence(mlResult.confidence || 0.85);
+              isAiInFlightRef.current = true;
+              aiService.classifyCurrentGesture(results.multiHandLandmarks[0])
+                .then((mlResult) => {
+                  if (!isMounted) return;
+                  // Strict confidence filter (>= 70%) to avoid any random noise
+                  if (mlResult && mlResult.gloss && mlResult.confidence >= 0.70) {
+                    setActiveGesture(mlResult.gloss);
+                    setConfidence(mlResult.confidence);
 
-                  const confirmed = stabilizerRef.current.feed(mlResult.gloss);
-                  if (confirmed && onGestureDetected) {
-                    onGestureDetected(confirmed, mlResult.confidence || 0.85);
+                    const confirmed = stabilizerRef.current.feed(mlResult.gloss);
+                    if (confirmed && onGestureDetected) {
+                      onGestureDetected(confirmed, mlResult.confidence);
+                    }
                   }
-                }
-              }).catch(() => {});
+                })
+                .catch(() => {})
+                .finally(() => {
+                  isAiInFlightRef.current = false;
+                });
             }
 
             // 2. Real-Time Client Fallback Classification
