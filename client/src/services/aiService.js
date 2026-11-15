@@ -55,26 +55,32 @@ class AIService {
   }
 
   /**
-   * Send the temporal landmark buffer to the backend ML classifier or run lightweight on-device inference
-   * @returns {Promise<{gloss: string, confidence: number}>}
+   * Send the temporal landmark buffer or provided landmarks to the backend ML classifier
+   * @param {Array} landmarks - Optional direct landmark array
+   * @returns {Promise<{gloss: string, confidence: number, source: string} | null>}
    */
-  async classifyCurrentGesture() {
-    if (this.buffer.length < 5 || this.isClassifying) {
+  async classifyCurrentGesture(landmarks = null) {
+    if (this.isClassifying) {
       return null;
     }
+
+    const inputLandmarks = landmarks || (this.buffer.length > 0 ? this.buffer[this.buffer.length - 1].landmarks : null);
+    if (!inputLandmarks) return null;
 
     this.isClassifying = true;
     try {
       // Send landmark coordinates to inference bridge endpoint
-      const latestLandmarks = this.buffer[this.buffer.length - 1].landmarks;
-      const response = await aiAPI.classifyLandmarks(latestLandmarks);
+      const response = await aiAPI.classifyLandmarks(inputLandmarks);
 
-      return {
-        gloss: response.data.data.detected_sign,
-        confidence: response.data.data.confidence,
-      };
+      if (response?.data?.success && response?.data?.data) {
+        return {
+          gloss: response.data.data.detected_sign,
+          confidence: response.data.data.confidence,
+          source: response.data.data.source,
+        };
+      }
+      return null;
     } catch (error) {
-      console.warn('[AIService] Backend inference offline, using client heuristic:', error.message);
       return null;
     } finally {
       this.isClassifying = false;

@@ -1,6 +1,15 @@
 # SignBridge AI: Python Machine Learning Microservice 🧠
 
-This folder contains the Python-based AI worker that classifies 3D hand landmarks into American Sign Language (ASL) sign glosses and bridges with Google Gemini AI.
+This folder contains the Python-based AI microservice that runs **Google's Official 1st-Place Pretrained GISLR (Isolated Sign Language Recognition) Model**, classifying real-time 3D MediaPipe coordinates across **250 American Sign Language (ASL) words** and bridging with Google Gemini AI.
+
+---
+
+## 🏆 Model Architecture & Engine
+
+- **Model Source:** Google Isolated Sign Language Recognition (GISLR) - 1st Place Solution (`hoyso48/1st-place-solution-inference`)
+- **Format:** TensorFlow Lite (`model.tflite`) powered by Google LiteRT runtime
+- **Vocabulary:** 250 isolated ASL vocabulary concepts (`sign_to_prediction_index_map.json`)
+- **Inference Runtime:** FastAPI on `http://localhost:8000`
 
 ---
 
@@ -10,79 +19,46 @@ This folder contains the Python-based AI worker that classifies 3D hand landmark
 Ensure you have Python 3.10+ installed. From the `ai_engine` folder:
 ```bash
 cd ai_engine
-pip install -r requirements.txt
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
 ```
 
----
-
-## 🎯 3 Ways to Use This AI Engine
-
-### Way 1: Use the Instant Pre-Trained Model (Quickest)
-Run the generator script to create a trained `sign_model.pkl` on the 10 core ASL signs:
-```bash
-python train_model.py
-```
-This trains a high-precision Random Forest classifier (98%+ validation accuracy) and outputs:
-- `sign_model.pkl` (Trained Model)
-- `label_encoder.pkl` (Sign Classes Encoder)
-
-Then start the inference server:
+### 2. Start the Inference Server
 ```bash
 python app.py
 ```
 *The FastAPI server runs on `http://localhost:8000`*.
 
----
-
-### Way 2: Record Your Own Hands & Custom Signs
-Want to add custom regional or personalized signs?
-1. Run the interactive collector:
-   ```bash
-   python collector.py
-   ```
-2. Hold your gesture in front of your webcam and press **`s`** to record 60 frames.
-3. Press **`n`** to advance to the next sign.
-4. Press **`q`** to save into `dataset/custom_landmarks.csv`.
-5. Run `python train_model.py` to re-train the model on your recorded data!
-
----
-
-### Way 3: Connect Your Existing Pre-Trained Model (.pt, .pth, .h5, or .onnx)
-If you already trained a PyTorch (`.pt`/`.pth`), TensorFlow/Keras (`.h5`), or ONNX model:
-1. Copy your model weights file into `ai_engine/`.
-2. In `ai_engine/app.py`, replace the `load_ai_model()` function to load your model:
-   ```python
-   # Example for PyTorch:
-   import torch
-   model = torch.load("your_model.pt", map_location="cpu")
-   model.eval()
-
-   # Example for ONNX:
-   import onnxruntime as ort
-   session = ort.InferenceSession("your_model.onnx")
-   ```
-3. The rest of the pipeline (FastAPI, React frontend, MediaPipe, Web Speech, and Gemini AI) connects seamlessly without needing any frontend changes!
+Or from root workspace:
+```bash
+npm run dev:ai
+```
 
 ---
 
 ## 🔗 API Endpoints
 
 - **Health Check**: `GET http://localhost:8000/health`
+- **Supported Classes List**: `GET http://localhost:8000/classes` (All 250 words)
 - **Classify Landmarks**: `POST http://localhost:8000/predict`
   ```json
   {
     "landmarks": [
       {"x": 0.5, "y": 0.5, "z": 0.0},
-      ... // 21 hand points
+      ... // 21 or 543 coordinates
     ]
   }
   ```
 - **Returns**:
   ```json
   {
-    "gesture": "HELLO",
-    "confidence": 0.98,
-    "status": "success"
+    "gesture": "WATER",
+    "confidence": 0.94,
+    "status": "success",
+    "engine": "google-gislr-250-tflite",
+    "alternatives": [
+      {"gesture": "DRINK", "confidence": 0.04},
+      {"gesture": "CUP", "confidence": 0.01}
+    ]
   }
   ```
-
