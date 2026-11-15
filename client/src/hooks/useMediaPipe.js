@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { classifyLandmarks, GestureStabilizer } from '../services/gestureClassifier';
+import { aiService } from '../services/aiService';
 
 /**
  * useMediaPipe: Real-Time Hand Tracking and ASL Gesture Recognition Hook
@@ -18,6 +19,7 @@ export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled =
   const animFrameIdRef = useRef(null);
   const stabilizerRef = useRef(new GestureStabilizer(5, 1400));
   const isSendingFrameRef = useRef(false);
+  const lastAiCheckRef = useRef(0);
 
   useEffect(() => {
     if (!enabled) return;
@@ -103,14 +105,31 @@ export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled =
               }
             }
 
-            // Perform Real-Time Classification
+            // 1. Throttled Backend ML Classification (Google GISLR 250-Word Model)
+            const now = performance.now();
+            if (now - lastAiCheckRef.current > 300) {
+              lastAiCheckRef.current = now;
+              aiService.classifyCurrentGesture(results.multiHandLandmarks[0]).then((mlResult) => {
+                if (!isMounted) return;
+                if (mlResult && mlResult.gloss) {
+                  setActiveGesture(mlResult.gloss);
+                  setConfidence(mlResult.confidence || 0.85);
+
+                  const confirmed = stabilizerRef.current.feed(mlResult.gloss);
+                  if (confirmed && onGestureDetected) {
+                    onGestureDetected(confirmed, mlResult.confidence || 0.85);
+                  }
+                }
+              }).catch(() => {});
+            }
+
+            // 2. Real-Time Client Fallback Classification
             const classification = classifyLandmarks(results.multiHandLandmarks);
 
             if (classification) {
-              setActiveGesture(classification.gesture);
-              setConfidence(classification.confidence);
+              setActiveGesture((prev) => prev || classification.gesture);
+              setConfidence((prev) => prev || classification.confidence);
 
-              // Stabilize before emitting token to prevent accidental flickers
               const confirmed = stabilizerRef.current.feed(classification.gesture);
               if (confirmed && onGestureDetected) {
                 onGestureDetected(confirmed, classification.confidence);

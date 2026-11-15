@@ -82,7 +82,7 @@ export const classifyLandmarksStub = async (req, res, next) => {
     // 1. Try forwarding to Python ML microservice if active
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 700);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
 
       const pyResponse = await fetch(PYTHON_AI_URL, {
         method: 'POST',
