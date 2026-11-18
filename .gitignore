@@ -44,3 +44,7 @@ Thumbs.db
 *.sln
 *.sw?
 
+# Local development scripts (Mac/Windows OS specific runners)
+scripts/run_ai.js
+
+
