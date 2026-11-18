@@ -56,12 +56,21 @@ app.use(errorHandler);
 // Boot server
 const startServer = async () => {
   await initializeDatabase();
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`=======================================================`);
     console.log(`🚀 SignBridge AI Backend Server running on port ${PORT}`);
     console.log(`🔗 API Base: http://localhost:${PORT}/api`);
     console.log(`🩺 Health: http://localhost:${PORT}/api/health`);
     console.log(`=======================================================`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [PORT IN USE] Port ${PORT} is already occupied by another running instance.`);
+      console.error(`👉 Run 'npx kill-port ${PORT}' or 'kill $(lsof -t -i:${PORT})' to free the port.\n`);
+    } else {
+      console.error('Server error:', err);
+    }
   });
 };
 

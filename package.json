@@ -6,7 +6,7 @@
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev:client\" \"npm run dev:ai\"",
-    "dev:ai": "node scripts/run_ai.js",
+    "dev:ai": "node -e \"const p=process.platform==='win32'?'.venv\\\\Scripts\\\\python.exe':'.venv/bin/python';require('child_process').spawn(p,['app.py'],{cwd:'ai_engine',stdio:'inherit',shell:true})\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "build:client": "npm run build --prefix client",
