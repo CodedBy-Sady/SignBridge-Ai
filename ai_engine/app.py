@@ -1,11 +1,14 @@
 """
-SignBridge AI: Python FastAPI Landmark Inference Microservice
-Engine: High-Performance 36-Class ASL Gesture Model (A-Z + 10 Core Signs)
+SignBridge AI: Python FastAPI Dual Landmark Inference Microservice
+Engines:
+  1. 36-Class ASL Gesture Model (A-Z + 10 Core Signs)
+  2. 60-Class BdSLW60 Bangla Sign Model (Family, Food, Daily, Household, Medical)
 Port: 8000
 Endpoints:
-  GET  /health  - Health, Model Info & 36 Classes List
-  GET  /classes - Full list of all 36 supported classes
-  POST /predict - Real-time ASL sign classification from 21 MediaPipe coordinates
+  GET  /health        - Health, Models Status & Classes Info
+  GET  /classes       - ASL supported classes
+  GET  /bdsl/classes  - Full list and metadata of all 60 BdSL classes
+  POST /predict       - Real-time gesture prediction (supports lang="asl" or lang="bdsl")
 """
 
 import os
@@ -15,59 +18,80 @@ import joblib
 import numpy as np
 from typing import Any, List, Dict, Union, Optional
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_FILE = os.path.join(BASE_DIR, "sign_model.pkl")
-ENCODER_FILE = os.path.join(BASE_DIR, "label_encoder.pkl")
+
+# ASL Model Paths
+ASL_MODEL_FILE = os.path.join(BASE_DIR, "sign_model.pkl")
+ASL_ENCODER_FILE = os.path.join(BASE_DIR, "label_encoder.pkl")
 GISLR_MODEL_PATH = os.path.join(BASE_DIR, "models", "gislr", "model.tflite")
 
-# Global state for Active ML Engine
-ml_state = {
+# BdSL 60 Model Paths
+BDSL_MODEL_FILE = os.path.join(BASE_DIR, "bdsl60_model.pkl")
+BDSL_ENCODER_FILE = os.path.join(BASE_DIR, "bdsl60_encoder.pkl")
+BDSL_METADATA_FILE = os.path.join(BASE_DIR, "bdsl60_metadata.json")
+
+# State holders
+asl_state = {
     "model": None,
     "classes": [],
     "is_loaded": False,
     "class_count": 0
 }
 
-def load_ai_model():
-    """Loads 36-Class ASL Random Forest Model and Encoder."""
-    if os.path.exists(MODEL_FILE) and os.path.exists(ENCODER_FILE):
-        try:
-            ml_state["model"] = joblib.load(MODEL_FILE)
-            ml_state["classes"] = list(joblib.load(ENCODER_FILE))
-            ml_state["class_count"] = len(ml_state["classes"])
-            ml_state["is_loaded"] = True
+bdsl_state = {
+    "model": None,
+    "classes": [],
+    "metadata": {},
+    "is_loaded": False,
+    "class_count": 0
+}
 
-            print("==================================================")
-            print("🚀 [AI Engine] Successfully loaded 36-Class ASL Model!")
-            print(f"📦 Model File: {MODEL_FILE}")
-            print(f"📖 Supported Classes ({ml_state['class_count']}): {ml_state['classes']}")
-            print("==================================================")
-            return True
+def load_models():
+    """Loads both ASL (36 classes) and BdSL (60 classes) models."""
+    # 1. Load ASL Model
+    if os.path.exists(ASL_MODEL_FILE) and os.path.exists(ASL_ENCODER_FILE):
+        try:
+            asl_state["model"] = joblib.load(ASL_MODEL_FILE)
+            asl_state["classes"] = list(joblib.load(ASL_ENCODER_FILE))
+            asl_state["class_count"] = len(asl_state["classes"])
+            asl_state["is_loaded"] = True
+            print(f"🚀 [AI Engine] Loaded ASL 36-Class Model ({asl_state['class_count']} classes)")
         except Exception as e:
             print(f"[AI Engine Error] Failed to load ASL model: {e}", file=sys.stderr)
-            return False
-    else:
-        print("[AI Engine Warning] sign_model.pkl not found! Run python train_model.py first.")
-        return False
+
+    # 2. Load BdSL 60 Model
+    if os.path.exists(BDSL_MODEL_FILE) and os.path.exists(BDSL_ENCODER_FILE):
+        try:
+            bdsl_state["model"] = joblib.load(BDSL_MODEL_FILE)
+            bdsl_state["classes"] = list(joblib.load(BDSL_ENCODER_FILE))
+            bdsl_state["class_count"] = len(bdsl_state["classes"])
+            if os.path.exists(BDSL_METADATA_FILE):
+                with open(BDSL_METADATA_FILE, "r", encoding="utf-8") as f:
+                    bdsl_state["metadata"] = json.load(f)
+            bdsl_state["is_loaded"] = True
+            print(f"🇧🇩 [AI Engine] Loaded BdSL 60-Class Model ({bdsl_state['class_count']} words)")
+        except Exception as e:
+            print(f"[AI Engine Error] Failed to load BdSL model: {e}", file=sys.stderr)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_ai_model()
+    load_models()
     yield
-    ml_state.clear()
+    asl_state.clear()
+    bdsl_state.clear()
 
 app = FastAPI(
-    title="SignBridge AI - 36-Class ASL Gesture Inference Service",
-    description="Real-time ASL recognition across 26 letters and 10 core conversational signs",
-    version="2.1.0",
+    title="SignBridge AI - Dual ASL & BdSL Gesture Inference Service",
+    description="Real-time recognition for 36-Class ASL and 60-Class Bangla Sign Language (BdSLW60)",
+    version="2.5.0",
     lifespan=lifespan
 )
 
-# Enable CORS for React frontend (Vite port 5173) and Node backend (Express port 5000)
+# Enable CORS for React frontend (Vite) and Node backend (Express)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -78,13 +102,13 @@ app.add_middleware(
 
 class PredictRequest(BaseModel):
     landmarks: Union[List[Dict[str, float]], List[List[Dict[str, float]]], List[float], List[Any]]
+    lang: Optional[str] = "asl"  # "asl" or "bdsl"
 
 def normalize_landmarks(raw_landmarks: Any) -> np.ndarray:
     """Parses 21 (x, y, z) MediaPipe hand landmarks and normalizes relative to wrist."""
     if not raw_landmarks:
         raise ValueError("Landmarks payload is empty.")
 
-    # If passed as multiHandLandmarks array [[hand1], ...]
     if isinstance(raw_landmarks, list) and len(raw_landmarks) > 0 and isinstance(raw_landmarks[0], list):
         hand = raw_landmarks[0]
     else:
@@ -114,46 +138,76 @@ def normalize_landmarks(raw_landmarks: Any) -> np.ndarray:
 def health_check():
     return {
         "status": "online",
-        "service": "SignBridge AI 36-Class ASL Inference Microservice",
-        "model_loaded": ml_state["is_loaded"],
-        "class_count": ml_state["class_count"],
+        "service": "SignBridge AI Dual ASL & BdSL Inference Microservice",
+        "asl": {
+            "loaded": asl_state["is_loaded"],
+            "classes": asl_state["class_count"]
+        },
+        "bdsl": {
+            "loaded": bdsl_state["is_loaded"],
+            "classes": bdsl_state["class_count"],
+            "dataset": "BdSLW60 (arXiv:2402.08635)"
+        },
         "gislr_ready": os.path.exists(GISLR_MODEL_PATH)
     }
 
 @app.get("/classes")
-def get_all_classes():
+def get_asl_classes():
     return {
-        "count": ml_state["class_count"],
-        "classes": ml_state["classes"]
+        "count": asl_state["class_count"],
+        "classes": asl_state["classes"]
+    }
+
+@app.get("/bdsl/classes")
+def get_bdsl_classes():
+    return {
+        "count": bdsl_state["class_count"],
+        "classes": bdsl_state["classes"],
+        "metadata": bdsl_state.get("metadata", {})
     }
 
 @app.post("/predict")
-def predict_gesture(payload: PredictRequest):
+def predict_gesture(payload: PredictRequest, lang: Optional[str] = Query(None)):
     """
-    Predicts ASL sign across 36 classes (A-Z + 10 conversational signs)
-    with strict confidence filtering.
+    Predicts signs across ASL (36 classes) or BdSL (60 classes)
+    based on requested language parameter.
     """
-    if not ml_state["is_loaded"] or ml_state["model"] is None:
-        if not load_ai_model():
-            raise HTTPException(status_code=503, detail="ML model is not loaded.")
+    # Check language target: "bdsl" / "bn" / "bangla" vs "asl" / "en"
+    req_lang = lang if isinstance(lang, str) else getattr(payload, "lang", "asl")
+    target_lang = (req_lang or "asl").lower()
+    is_bdsl = target_lang in ["bdsl", "bn", "bangla"]
+
+    if is_bdsl:
+        if not bdsl_state["is_loaded"] or bdsl_state["model"] is None:
+            load_models()
+            if not bdsl_state["is_loaded"]:
+                raise HTTPException(status_code=503, detail="BdSL 60-Class model is not loaded. Run train_bdsl60.py first.")
+        active_model = bdsl_state["model"]
+        active_classes = bdsl_state["classes"]
+        engine_tag = "signbridge-bdsl-60-rf"
+    else:
+        if not asl_state["is_loaded"] or asl_state["model"] is None:
+            load_models()
+            if not asl_state["is_loaded"]:
+                raise HTTPException(status_code=503, detail="ASL 36-Class model is not loaded.")
+        active_model = asl_state["model"]
+        active_classes = asl_state["classes"]
+        engine_tag = "signbridge-asl-36-rf"
 
     try:
         features = normalize_landmarks(payload.landmarks)
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
-    model = ml_state["model"]
-    classes = ml_state["classes"]
-
-    probs = model.predict_proba(features)[0]
+    probs = active_model.predict_proba(features)[0]
     top_idx = int(np.argmax(probs))
-    predicted_gesture = str(classes[top_idx])
+    predicted_gesture = str(active_classes[top_idx])
     confidence = float(probs[top_idx])
 
     # Top 3 alternatives
     top_3_indices = np.argsort(probs)[-3:][::-1]
     alternatives = [
-        {"gesture": str(classes[idx]), "confidence": round(float(probs[idx]), 4)}
+        {"gesture": str(active_classes[idx]), "confidence": round(float(probs[idx]), 4)}
         for idx in top_3_indices
     ]
 
@@ -161,14 +215,15 @@ def predict_gesture(payload: PredictRequest):
         "gesture": predicted_gesture,
         "confidence": round(confidence, 4),
         "status": "success",
-        "engine": "signbridge-asl-36-rf",
+        "lang": "bdsl" if is_bdsl else "asl",
+        "engine": engine_tag,
         "alternatives": alternatives
     }
 
 if __name__ == "__main__":
     import uvicorn
     print("==================================================")
-    print("🧠 Starting SignBridge AI (36-Class ASL Engine)")
+    print("🧠 Starting SignBridge AI Dual Inference Microservice")
     print("🚀 URL: http://localhost:8000")
     print("📖 Docs: http://localhost:8000/docs")
     print("==================================================")

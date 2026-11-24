@@ -50,8 +50,8 @@ export const sessionAPI = {
 };
 
 export const aiAPI = {
-  reconstructSentence: (glosses, history = []) => api.post('/ai/reconstruct', { glosses, history }),
-  classifyLandmarks: (landmarks) => api.post('/ai/classify-landmarks', { landmarks }),
+  reconstructSentence: (glosses, history = [], lang = 'asl') => api.post('/ai/reconstruct', { glosses, history, lang }),
+  classifyLandmarks: (landmarks, lang = 'asl') => api.post('/ai/classify-landmarks', { landmarks, lang }),
 };
 
 export default api;

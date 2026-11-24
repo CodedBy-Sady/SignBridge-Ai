@@ -60,7 +60,14 @@ export const useTextToSpeech = ({ defaultRate = 1.0, defaultPitch = 1.0, default
       utterance.pitch = pitch;
       utterance.volume = volume;
 
-      if (selectedVoice) {
+      const isBangla = /[\u0980-\u09FF]/.test(text);
+      if (isBangla) {
+        utterance.lang = 'bn-BD';
+        const banglaVoice = voices.find((v) => v.lang.startsWith('bn'));
+        if (banglaVoice) {
+          utterance.voice = banglaVoice;
+        }
+      } else if (selectedVoice) {
         utterance.voice = selectedVoice;
       }
 

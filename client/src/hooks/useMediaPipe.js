@@ -9,11 +9,16 @@ import { aiService } from '../services/aiService';
  * 
  * Uses direct requestAnimationFrame processing to prevent camera hardware lockouts.
  */
-export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled = true } = {}) => {
+export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled = true, lang = 'asl' } = {}) => {
   const [isReady, setIsReady] = useState(false);
   const [handCount, setHandCount] = useState(0);
   const [activeGesture, setActiveGesture] = useState(null);
   const [confidence, setConfidence] = useState(0);
+
+  const langRef = useRef(lang);
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
 
   const handsRef = useRef(null);
   const animFrameIdRef = useRef(null);
@@ -111,7 +116,7 @@ export const useMediaPipe = ({ videoRef, canvasRef, onGestureDetected, enabled =
             if (!isAiInFlightRef.current && now - lastAiCheckRef.current > 350) {
               lastAiCheckRef.current = now;
               isAiInFlightRef.current = true;
-              aiService.classifyCurrentGesture(results.multiHandLandmarks[0])
+              aiService.classifyCurrentGesture(results.multiHandLandmarks[0], langRef.current)
                 .then((mlResult) => {
                   if (!isMounted) return;
                   // Strict confidence filter (>= 70%) to avoid any random noise
