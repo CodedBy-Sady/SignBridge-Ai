@@ -1,0 +1,368 @@
+{
+  "model_name": "SignBridge-BdSL60-RF",
+  "dataset": "BdSLW60 (arXiv:2402.08635)",
+  "accuracy": 0.9407,
+  "total_classes": 60,
+  "classes": [
+    {
+      "id": "W1",
+      "bn": "বাবা",
+      "en": "Father",
+      "cat": "family"
+    },
+    {
+      "id": "W2",
+      "bn": "আত্মীয়",
+      "en": "Relatives",
+      "cat": "family"
+    },
+    {
+      "id": "W3",
+      "bn": "ভাই",
+      "en": "Brother",
+      "cat": "family"
+    },
+    {
+      "id": "W4",
+      "bn": "বোন",
+      "en": "Sister",
+      "cat": "family"
+    },
+    {
+      "id": "W5",
+      "bn": "বৌ",
+      "en": "Wife",
+      "cat": "family"
+    },
+    {
+      "id": "W6",
+      "bn": "চাচা",
+      "en": "Uncle",
+      "cat": "family"
+    },
+    {
+      "id": "W7",
+      "bn": "চাচী",
+      "en": "Aunt",
+      "cat": "family"
+    },
+    {
+      "id": "W8",
+      "bn": "দাদা/নানা",
+      "en": "Grandfather",
+      "cat": "family"
+    },
+    {
+      "id": "W9",
+      "bn": "দাদী/নানী",
+      "en": "Grandmother",
+      "cat": "family"
+    },
+    {
+      "id": "W10",
+      "bn": "দায়িত্ব",
+      "en": "Responsibility",
+      "cat": "family"
+    },
+    {
+      "id": "W11",
+      "bn": "দেবর",
+      "en": "Brother-in-law",
+      "cat": "family"
+    },
+    {
+      "id": "W12",
+      "bn": "দুলাভাই",
+      "en": "Brother-in-law (Sister's husband)",
+      "cat": "family"
+    },
+    {
+      "id": "W19",
+      "bn": "কন্যা",
+      "en": "Daughter",
+      "cat": "family"
+    },
+    {
+      "id": "W20",
+      "bn": "মা",
+      "en": "Mother",
+      "cat": "family"
+    },
+    {
+      "id": "W37",
+      "bn": "আম",
+      "en": "Mango",
+      "cat": "food"
+    },
+    {
+      "id": "W38",
+      "bn": "আলু",
+      "en": "Potato",
+      "cat": "food"
+    },
+    {
+      "id": "W39",
+      "bn": "আনারস",
+      "en": "Pineapple",
+      "cat": "food"
+    },
+    {
+      "id": "W40",
+      "bn": "আঙ্গুর",
+      "en": "Grapes",
+      "cat": "food"
+    },
+    {
+      "id": "W41",
+      "bn": "আপেল",
+      "en": "Apple",
+      "cat": "food"
+    },
+    {
+      "id": "W42",
+      "bn": "বিস্কুট",
+      "en": "Biscuit",
+      "cat": "food"
+    },
+    {
+      "id": "W43",
+      "bn": "বরই",
+      "en": "Plum/Jujube",
+      "cat": "food"
+    },
+    {
+      "id": "W44",
+      "bn": "কেক",
+      "en": "Cake",
+      "cat": "food"
+    },
+    {
+      "id": "W45",
+      "bn": "চা",
+      "en": "Tea",
+      "cat": "food"
+    },
+    {
+      "id": "W46",
+      "bn": "চাল",
+      "en": "Rice",
+      "cat": "food"
+    },
+    {
+      "id": "W47",
+      "bn": "চিনি",
+      "en": "Sugar",
+      "cat": "food"
+    },
+    {
+      "id": "W48",
+      "bn": "চিপস",
+      "en": "Chips",
+      "cat": "food"
+    },
+    {
+      "id": "W49",
+      "bn": "চকলেট",
+      "en": "Chocolate",
+      "cat": "food"
+    },
+    {
+      "id": "W50",
+      "bn": "ডাল",
+      "en": "Lentils",
+      "cat": "food"
+    },
+    {
+      "id": "W91",
+      "bn": "বোতাম",
+      "en": "Button",
+      "cat": "items"
+    },
+    {
+      "id": "W92",
+      "bn": "টুপি",
+      "en": "Cap",
+      "cat": "items"
+    },
+    {
+      "id": "W93",
+      "bn": "চাদর",
+      "en": "Shawl",
+      "cat": "items"
+    },
+    {
+      "id": "W94",
+      "bn": "চিরুনি",
+      "en": "Comb",
+      "cat": "items"
+    },
+    {
+      "id": "W95",
+      "bn": "চশমা",
+      "en": "Spectacles",
+      "cat": "items"
+    },
+    {
+      "id": "W96",
+      "bn": "চুড়ি",
+      "en": "Bangles",
+      "cat": "items"
+    },
+    {
+      "id": "W97",
+      "bn": "ক্লিপ",
+      "en": "Hair Clip",
+      "cat": "items"
+    },
+    {
+      "id": "W98",
+      "bn": "ক্রিম",
+      "en": "Cream",
+      "cat": "items"
+    },
+    {
+      "id": "W99",
+      "bn": "তথ্য",
+      "en": "Data/Info",
+      "cat": "items"
+    },
+    {
+      "id": "W100",
+      "bn": "দেনাদার",
+      "en": "Debtor",
+      "cat": "items"
+    },
+    {
+      "id": "W111",
+      "bn": "জমজ",
+      "en": "Twin",
+      "cat": "items"
+    },
+    {
+      "id": "W112",
+      "bn": "জুতা",
+      "en": "Shoe",
+      "cat": "items"
+    },
+    {
+      "id": "W211",
+      "bn": "টুথপেস্ট",
+      "en": "Toothpaste",
+      "cat": "household"
+    },
+    {
+      "id": "W212",
+      "bn": "টি-শার্ট",
+      "en": "T-shirt",
+      "cat": "household"
+    },
+    {
+      "id": "W213",
+      "bn": "টিউবলাইট",
+      "en": "Tubelight",
+      "cat": "household"
+    },
+    {
+      "id": "W214",
+      "bn": "টেলিভিশন",
+      "en": "Television",
+      "cat": "household"
+    },
+    {
+      "id": "W215",
+      "bn": "এসি",
+      "en": "Air Conditioner",
+      "cat": "household"
+    },
+    {
+      "id": "W216",
+      "bn": "অ্যাপার্টমেন্ট",
+      "en": "Apartment",
+      "cat": "household"
+    },
+    {
+      "id": "W217",
+      "bn": "অডিও ক্যাসেট",
+      "en": "Audio Cassette",
+      "cat": "household"
+    },
+    {
+      "id": "W218",
+      "bn": "আয়না",
+      "en": "Looking Mirror",
+      "cat": "household"
+    },
+    {
+      "id": "W219",
+      "bn": "বালতি",
+      "en": "Water Bucket",
+      "cat": "household"
+    },
+    {
+      "id": "W220",
+      "bn": "বালু",
+      "en": "Sand",
+      "cat": "household"
+    },
+    {
+      "id": "W351",
+      "bn": "এইডস",
+      "en": "AIDS",
+      "cat": "medical"
+    },
+    {
+      "id": "W352",
+      "bn": "বাত",
+      "en": "Arthritis",
+      "cat": "medical"
+    },
+    {
+      "id": "W353",
+      "bn": "ব্যান্ডেজ",
+      "en": "Bandage",
+      "cat": "medical"
+    },
+    {
+      "id": "W354",
+      "bn": "ক্যাপসুল",
+      "en": "Capsule",
+      "cat": "medical"
+    },
+    {
+      "id": "W355",
+      "bn": "চিকিৎসা",
+      "en": "Treatment",
+      "cat": "medical"
+    },
+    {
+      "id": "W356",
+      "bn": "চোখ ওঠা",
+      "en": "Conjunctivitis",
+      "cat": "medical"
+    },
+    {
+      "id": "W357",
+      "bn": "ডেঙ্গু",
+      "en": "Dengue",
+      "cat": "medical"
+    },
+    {
+      "id": "W358",
+      "bn": "ডাক্তার",
+      "en": "Doctor",
+      "cat": "medical"
+    },
+    {
+      "id": "W359",
+      "bn": "দংশন",
+      "en": "Bite",
+      "cat": "medical"
+    },
+    {
+      "id": "W360",
+      "bn": "দুর্বল",
+      "en": "Weak",
+      "cat": "medical"
+    }
+  ]
+}

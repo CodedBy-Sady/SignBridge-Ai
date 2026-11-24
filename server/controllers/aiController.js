@@ -6,7 +6,7 @@ const PYTHON_AI_URL = process.env.PYTHON_AI_URL || 'http://localhost:8000/predic
  * Geometric heuristic classifier for 21 3D hand coordinates
  * used as zero-crash fallback when Python worker is not active.
  */
-function classifyLandmarksGeometricFallback(landmarks) {
+function classifyLandmarksGeometricFallback(landmarks, lang = 'asl') {
   if (!landmarks || landmarks.length < 21) {
     return { gesture: 'UNKNOWN', confidence: 0.0 };
   }
@@ -27,28 +27,30 @@ function classifyLandmarksGeometricFallback(landmarks) {
   const thumbExt = dist(thumbTip, landmarks[5]) > 0.15;
   const pinkyExt = dist(pinkyTip, wrist) > 0.25;
 
+  const isBdSL = lang.toLowerCase() === 'bdsl' || lang.toLowerCase() === 'bn';
+
   if (thumbExt && indexExt && middleExt && pinkyExt) {
-    return { gesture: 'HELLO', confidence: 0.95 };
+    return { gesture: isBdSL ? 'বাবা' : 'HELLO', confidence: 0.95 };
   }
   if (thumbExt && indexExt && !middleExt && pinkyExt) {
-    return { gesture: 'I LOVE YOU', confidence: 0.97 };
+    return { gesture: isBdSL ? 'মা' : 'I LOVE YOU', confidence: 0.97 };
   }
   if (thumbExt && !indexExt && !middleExt && !pinkyExt) {
-    return { gesture: 'HELP', confidence: 0.94 };
+    return { gesture: isBdSL ? 'ডাক্তার' : 'HELP', confidence: 0.94 };
   }
   if (!thumbExt && indexExt && !middleExt && !pinkyExt) {
-    return { gesture: 'WHERE', confidence: 0.91 };
+    return { gesture: isBdSL ? 'ভাই' : 'WHERE', confidence: 0.91 };
   }
   if (!thumbExt && !indexExt && !middleExt && !pinkyExt) {
-    return { gesture: 'YES', confidence: 0.89 };
+    return { gesture: isBdSL ? 'আলু' : 'YES', confidence: 0.89 };
   }
 
-  return { gesture: 'THANK YOU', confidence: 0.90 };
+  return { gesture: isBdSL ? 'চিকিৎসা' : 'THANK YOU', confidence: 0.90 };
 }
 
 export const reconstructSignSentence = async (req, res, next) => {
   try {
-    const { glosses, history = [] } = req.body;
+    const { glosses, history = [], lang = 'asl' } = req.body;
 
     if (!glosses) {
       return res.status(400).json({
@@ -57,7 +59,7 @@ export const reconstructSignSentence = async (req, res, next) => {
       });
     }
 
-    const result = await reconstructSentenceFromGlosses(glosses, history);
+    const result = await reconstructSentenceFromGlosses(glosses, history, lang);
 
     return res.json({
       success: true,
@@ -70,7 +72,7 @@ export const reconstructSignSentence = async (req, res, next) => {
 
 export const classifyLandmarksStub = async (req, res, next) => {
   try {
-    const { landmarks } = req.body;
+    const { landmarks, lang = 'asl' } = req.body;
 
     if (!landmarks || !Array.isArray(landmarks)) {
       return res.status(400).json({
@@ -84,10 +86,10 @@ export const classifyLandmarksStub = async (req, res, next) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-      const pyResponse = await fetch(PYTHON_AI_URL, {
+      const pyResponse = await fetch(`${PYTHON_AI_URL}?lang=${encodeURIComponent(lang)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ landmarks }),
+        body: JSON.stringify({ landmarks, lang }),
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -99,6 +101,8 @@ export const classifyLandmarksStub = async (req, res, next) => {
           data: {
             detected_sign: pyData.gesture,
             confidence: pyData.confidence,
+            lang: pyData.lang || lang,
+            alternatives: pyData.alternatives || [],
             source: 'python-fastapi-service',
             processed_at: new Date().toISOString()
           }
@@ -109,13 +113,14 @@ export const classifyLandmarksStub = async (req, res, next) => {
     }
 
     // 2. High-performance geometric fallback
-    const result = classifyLandmarksGeometricFallback(landmarks);
+    const result = classifyLandmarksGeometricFallback(landmarks, lang);
 
     return res.json({
       success: true,
       data: {
         detected_sign: result.gesture,
         confidence: result.confidence,
+        lang,
         source: 'geometric-classifier-fallback',
         processed_at: new Date().toISOString()
       }
